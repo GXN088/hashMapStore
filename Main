@@ -1,0 +1,86 @@
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.Scanner;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+
+public class Main {
+    public static HashMap<String, Object> processHashMap(HashMap<String, Double> products) {
+        // Напишите свой код здесь
+        
+        // Создаём результирующую HashMap
+        HashMap<String, Object> result = new HashMap<>();
+        
+        // 1. Находим продукт с наивысшей ценой
+        if (products.isEmpty()) {
+            result.put("Highest", "");
+            result.put("Average", 0.0);
+            result.put("Filtered", new HashMap<String, Double>());
+            return result;
+        }
+        
+        String highestProduct = "";
+        double highestPrice = -1.0;
+        double sum = 0.0;
+        HashMap<String, Double> filtered = new HashMap<>();
+        
+        for (HashMap.Entry<String, Double> entry : products.entrySet()) {
+            String product = entry.getKey();
+            double price = entry.getValue();
+            
+            // Суммируем для вычисления среднего
+            sum += price;
+            
+            // Проверяем на максимальную цену
+            if (price > highestPrice) {
+                highestPrice = price;
+                highestProduct = product;
+            }
+            
+            // Фильтруем продукты с ценой > 50.00
+            if (price > 50.00) {
+                filtered.put(product, price);
+            }
+        }
+        
+        // Вычисляем среднюю цену
+        double average = sum / products.size();
+        
+        // Заполняем результат
+        result.put("Highest", highestProduct);
+        result.put("Filtered", filtered);
+        result.put("Average", average);
+        
+        return result;
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        String productsString = scanner.nextLine();
+
+        // Преобразовать строку JSON в HashMap
+        Type mapType = new TypeToken<HashMap<String, Double>>(){}.getType();
+        HashMap<String, Double> products = new Gson().fromJson(productsString, mapType);
+
+        HashMap<String, Object> result = processHashMap(products);
+
+        // Отсортировать отфильтрованную карту для обеспечения согласованного вывода
+        Map<String, Double> filteredMap = (Map<String, Double>) result.get("Filtered");
+        if (filteredMap != null && !filteredMap.isEmpty()) {
+            Map<String, Double> sortedFiltered = filteredMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (a, b) -> b,
+                    LinkedHashMap::new
+                ));
+            result.put("Filtered", sortedFiltered);
+        }
+        
+        System.out.println(result);
+    }
+}
